@@ -347,7 +347,7 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
     <p style="font-size:.87rem;color:#D5DDE8">ใช้ <b>Chrome หรือ Edge</b> เท่านั้น (Web Speech API ไม่รองรับใน Firefox/Safari) และต้องต่อ internet เพราะการถอดเสียงประมวลผลที่ Google server</p>
 
     <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">2. ประชุมในห้อง (แบบเจอหน้า)</h3>
-    <p style="font-size:.87rem;color:#D5DDE8">วางโน้ตบุ๊คกลางโต๊ะ → กด <b>เริ่มบันทึก</b> → เลือกชื่อคนที่กำลังพูดด้วยปุ่ม <kbd>1</kbd>–<kbd>9</kbd> ระบบจะติดชื่อให้ทุกประโยค แม่นที่สุดถ้าใช้ไมค์ประชุม USB</p>
+    <p style="font-size:.87rem;color:#D5DDE8">วางโน้ตบุ๊คกลางโต๊ะ → กด <b>เริ่มบันทึก</b> → ตรวจทาน Transcript ก่อนคัดลอกออกไปใช้งานต่อ แม่นที่สุดถ้าใช้ไมค์ประชุม USB</p>
 
     <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">3. ประชุมออนไลน์ (Zoom / Teams / Meet)</h3>
     <div class="warn">⚠️ <span><b>ข้อจำกัดจริงที่ต้องรู้:</b> Web Speech API ถอดเสียงได้จาก <b>ไมโครโฟน</b> เท่านั้น — ไม่สามารถถอดจากเสียง Tab ที่แชร์เข้ามาได้โดยตรง (เป็นข้อจำกัดของ Chrome เอง ไม่ใช่ bug ของ tool)</span></div>
@@ -359,10 +359,10 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
     </ul>
 
     <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">4. เส้นทางที่แนะนำสำหรับงานลูกค้า</h3>
-    <p style="font-size:.87rem;color:#D5DDE8">ถ้าประชุมสำคัญ (Workshop / UAT / Steering) ให้ใช้ <b>Teams/Zoom transcript</b> ที่มี speaker แยกมาให้อยู่แล้ว → วางเข้า Tab 2 → สรุป Tab 3 → ทำ Diagram Tab 4 · จะได้ทั้งความแม่นและความเร็ว</p>
+    <p style="font-size:.87rem;color:#D5DDE8">ถ้าประชุมสำคัญ (Workshop / UAT / Steering) ให้ใช้ <b>Teams/Zoom transcript</b> ที่มี speaker แยกมาให้อยู่แล้ว → วางเข้า Tab 2 → ตรวจทานและคัดลอกออกไปทำงานต่อ · จะได้ทั้งความแม่นและความเร็ว</p>
 
     <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">5. ทางลัดคีย์บอร์ด</h3>
-    <p style="font-size:.87rem;color:#D5DDE8"><kbd>1</kbd>–<kbd>9</kbd> เปลี่ยนผู้พูด · <kbd>Ctrl</kbd>+<kbd>Space</kbd> เริ่ม/หยุดบันทึก · <kbd>Ctrl</kbd>+<kbd>S</kbd> เซฟ session</p>
+    <p style="font-size:.87rem;color:#D5DDE8"><kbd>Ctrl</kbd>+<kbd>Space</kbd> เริ่ม/หยุดบันทึก · <kbd>Ctrl</kbd>+<kbd>S</kbd> เซฟ session</p>
 
     <div class="note">🔒 <span>ข้อมูลทุกอย่างอยู่ในเครื่องคุณ ไม่มีการอัปโหลดที่ไหน ยกเว้นตอนกด “สรุปด้วย AI” เท่านั้น — สำหรับลูกค้าที่มี NDA เข้ม แนะนำถอดชื่อจริงออกก่อนสรุป</span></div>
   </div>
@@ -402,10 +402,19 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 });
 
 /* ══════════════════ SPEAKERS ══════════════════ */
-function renderSpk(){
-  /* ผู้พูดใช้ชื่อมาตรฐานและเลือกแก้ไขได้จาก Transcript */
+function renderSpk(){ /* ผู้พูดจะแสดงเป็นป้ายมาตรฐานใน Transcript เท่านั้น */ }
+function setSpk(i){ S.cur=i; }
+function addSpk(){
+  const v=$('newSpk').value.trim(); if(!v) return;
+  S.speakers.push({n:v}); $('newSpk').value=''; renderSpk(); renderTr();
 }
-function setSpk(i){ if(i>=0 && i<S.speakers.length) S.cur=i; }
+function rmSpk(i){
+  if(S.speakers.length<=1) return toast('ต้องมีผู้พูดอย่างน้อย 1 คน');
+  S.speakers.splice(i,1);
+  S.segments.forEach(g=>{ if(g.sp===i) g.sp=0; else if(g.sp>i) g.sp--; });
+  if(S.cur>=S.speakers.length) S.cur=0;
+  renderSpk(); renderTr();
+}
 
 /* ══════════════════ RECORDING ══════════════════ */
 async function startRec(){
@@ -575,7 +584,11 @@ function importPaste(){
     let name=null, tx=line.trim();
     if(m){ name=m[1].trim(); tx=m[2].trim(); }
     let sp=0;
-    if(name){ const found=name.match(/(?:ผู้พูด|speaker)\s*([1-3])/i); if(found) sp=+found[1]-1; }
+    if(name){
+      let idx=S.speakers.findIndex(s=>s.n.toLowerCase().startsWith(name.toLowerCase())||name.toLowerCase().startsWith(s.n.split(' ')[0].toLowerCase()));
+      if(idx<0){ S.speakers.push({n:name}); idx=S.speakers.length-1; }
+      sp=idx;
+    }
     t+=6000;
     S.segments.push({t, sp, tx, c:1});
   });
@@ -689,12 +702,7 @@ function parseAndApply(txt){
   const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
   const obj = JSON.parse(clean.slice(s, e+1));
   S.summary = obj;
-  S.steps = (obj.process && obj.process.steps || []).map((x,i)=>({
-    n:x.n||i+1, title:x.title||'', desc:x.desc||'', actor:x.actor||'', type:x.type||'process', yes:x.yes||'', no:x.no||''
-  }));
-  $('dgTitle').value = (obj.process&&obj.process.title)||$('mTitle').value||'';
-  $('dgTitleEn').value = (obj.process&&obj.process.titleEn)||'';
-  renderSum(); renderStepEd(); renderDg();
+  renderSum();
 }
 
 function renderSum(){
@@ -877,8 +885,7 @@ ${diagramBody()}
 /* ══════════════════ SESSION ══════════════════ */
 function saveSession(){
   const data={meta:{title:$('mTitle').value,client:$('mClient').value,date:$('mDate').value,lang:$('mLang').value},
-    speakers:S.speakers,segments:S.segments,summary:S.summary,steps:S.steps,
-    dgTitle:$('dgTitle').value,dgTitleEn:$('dgTitleEn').value,v:1};
+    speakers:S.speakers,segments:S.segments,summary:S.summary,v:1};
   dl(fname('json').replace('.json','_session.json'), JSON.stringify(data,null,2),'application/json');
   toast('เซฟ session แล้ว');
 }
@@ -889,9 +896,8 @@ function loadSession(inp){
     const d=JSON.parse(r.result);
     $('mTitle').value=d.meta.title||''; $('mClient').value=d.meta.client||'';
     $('mDate').value=d.meta.date||''; $('mLang').value=d.meta.lang||'th-TH';
-    S.speakers=[{n:'ผู้พูด 1'},{n:'ผู้พูด 2'},{n:'ผู้พูด 3'}]; S.segments=d.segments||[]; S.summary=d.summary||null; S.steps=d.steps||[];
-    $('dgTitle').value=d.dgTitle||''; $('dgTitleEn').value=d.dgTitleEn||'';
-    renderSpk(); renderTr(); renderLive(); if(S.summary) renderSum(); renderStepEd(); renderDg();
+    S.speakers=d.speakers||S.speakers; S.segments=d.segments||[]; S.summary=d.summary||null;
+    renderSpk(); renderTr(); renderLive(); if(S.summary) renderSum();
     toast('โหลด session แล้ว');
   }catch(e){ toast('ไฟล์ไม่ถูกต้อง'); } };
   r.readAsText(f); inp.value='';
@@ -909,7 +915,7 @@ window.addEventListener('beforeunload',e=>{ if(S.recording||S.segments.length){ 
 
 /* ══════════════════ INIT ══════════════════ */
 $('mDate').valueAsDate=new Date();
-renderSpk(); renderTr(); renderStepEd(); renderDg();
+renderSpk(); renderTr();
 if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
   $('liveBox').innerHTML='<span style="color:var(--orange)">⚠️ เบราว์เซอร์นี้ไม่รองรับการถอดเสียงอัตโนมัติ — ใช้ Chrome หรือ Edge (ยังอัดไฟล์เสียงได้ปกติ)</span>';
 }
