@@ -219,7 +219,6 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
     <button class="tab on" data-t="rec">บันทึกเสียง</button>
     <button class="tab" data-t="tr">Transcript</button>
     <button class="tab" data-t="sum">สรุปการประชุม</button>
-    <button class="tab" data-t="dg">Process Flow</button>
     <button class="tab" data-t="hp">คู่มือการใช้งาน</button>
   </div>
 </header>
@@ -270,15 +269,6 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
     </div>
 
     <div>
-      <div class="card" style="margin-bottom:14px">
-        <h2>👥 ผู้พูด</h2>
-        <div class="hint">กดเลือก “คนที่กำลังพูด” หรือกดปุ่มเลข <kbd>1</kbd>–<kbd>9</kbd> ระหว่างประชุม ระบบจะติดชื่อให้ทุกประโยคอัตโนมัติ</div>
-        <div class="spk-list" id="spkList"></div>
-        <div class="row" style="margin-top:11px">
-          <input class="f" id="newSpk" placeholder="ชื่อ + ตำแหน่ง" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addSpk()">
-          <button class="btn" onclick="addSpk()">+ เพิ่ม</button>
-        </div>
-      </div>
       <div class="card">
         <div class="eyebrow">Audio File</div>
         <div class="hint" style="margin-bottom:10px">ไฟล์เสียงเก็บไว้เป็นหลักฐาน / ส่งไปถอดซ้ำด้วย ASR ที่แม่นกว่าได้</div>
@@ -326,7 +316,7 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
   <div class="card cy">
     <div class="eyebrow">Meeting Summary</div>
     <h2>จัดทำสรุปการประชุม</h2>
-    <div class="hint">สร้าง MOM พร้อมหัวข้อสำคัญ ข้อตกลง งานที่ต้องดำเนินการ ประเด็นค้าง และโครง Process Flow</div>
+    <div class="hint">สร้าง MOM พร้อมหัวข้อสำคัญ ข้อตกลง งานที่ต้องดำเนินการ และประเด็นค้าง</div>
     <div class="row">
       <button class="btn solid" id="btnAI" onclick="runAI()">ประมวลผลสรุป</button>
       <button class="btn" onclick="copyPrompt()">คัดลอกข้อความเพื่อประมวลผล</button>
@@ -346,46 +336,7 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
   <div id="sumOut"></div>
 </section>
 
-<!-- ══════════ TAB 4 : DIAGRAM ══════════ -->
-<section class="panel" id="p-dg">
-  <div class="card cy">
-    <div class="eyebrow">Process Diagram Builder</div>
-    <div class="row" style="justify-content:space-between">
-      <div>
-        <h2>สร้าง Process HTML จากเนื้อหาที่สรุปได้</h2>
-        <div class="hint" style="margin:0">ธีม dark tech-premium · cyan = main flow · orange = exception/decision · export เป็น HTML ไฟล์เดียว ส่งลูกค้าได้เลย</div>
-      </div>
-      <div class="row">
-        <button class="btn" onclick="renderDg()">↻ Refresh</button>
-        <button class="btn solid" onclick="exportDg()">⬇ Export Diagram HTML</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="eyebrow">Step Editor</div>
-    <div class="row" style="margin-bottom:12px">
-      <input class="f" id="dgTitle" placeholder="ชื่อ Process (ไทย)" style="flex:1;min-width:180px">
-      <input class="f" id="dgTitleEn" placeholder="English name" style="flex:1;min-width:150px">
-    </div>
-    <div class="stepEd" style="font-size:.68rem;color:var(--gray);text-transform:uppercase;letter-spacing:.1em;font-family:'Inter'">
-      <div>Step</div><div>ชื่อขั้นตอน</div><div>คำอธิบาย</div><div>Actor / Type</div><div></div>
-    </div>
-    <div id="stepList"></div>
-    <div class="row" style="margin-top:11px">
-      <button class="btn" onclick="addStep()">+ เพิ่ม Step</button>
-      <button class="btn gh" onclick="addStep('decision')">+ เพิ่ม Decision</button>
-      <button class="btn gh" onclick="addStep('exception')">+ เพิ่ม Exception</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="eyebrow">Preview</div>
-    <div id="dgPrev"></div>
-  </div>
-</section>
-
-<!-- ══════════ TAB 5 : HELP ══════════ -->
+<!-- ══════════ HELP ══════════ -->
 <section class="panel" id="p-hp">
   <div class="card cy">
     <div class="eyebrow">Setup</div>
@@ -425,7 +376,7 @@ input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;b
 /* ══════════════════ STATE ══════════════════ */
 const AV = ['#00C8D4','#FF6B35','#2ECC8F','#B47CFF','#FFD166','#4D9DFF','#FF7CA8','#7CF7FF','#9CE37D'];
 const S = {
-  speakers: [{n:'ผมเอง (Consultant)'},{n:'ลูกค้า - Key User'},{n:'ลูกค้า - Manager'}],
+  speakers: [{n:'ผู้พูด 1'},{n:'ผู้พูด 2'},{n:'ผู้พูด 3'}],
   cur: 0, segments: [], recording:false, paused:false, t0:0, elapsed:0,
   audioURL:null, summary:null, steps:[], lastFinal:0
 };
@@ -448,31 +399,13 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); $('p-'+b.dataset.t).classList.add('on');
   if(b.dataset.t==='tr') renderTr();
-  if(b.dataset.t==='dg'){ renderStepEd(); renderDg(); }
 });
 
 /* ══════════════════ SPEAKERS ══════════════════ */
 function renderSpk(){
-  $('spkList').innerHTML = S.speakers.map((s,i)=>`
-    <div class="spk ${i===S.cur?'on':''}" onclick="setSpk(${i})">
-      <div class="av" style="background:${AV[i%AV.length]}">${esc(s.n.trim().charAt(0)||'?')}</div>
-      <div class="nm" title="${esc(s.n)}">${esc(s.n)}</div>
-      <span class="key">${i<9?i+1:''}</span>
-      <button class="del" onclick="event.stopPropagation();rmSpk(${i})">✕</button>
-    </div>`).join('');
+  /* ผู้พูดใช้ชื่อมาตรฐานและเลือกแก้ไขได้จาก Transcript */
 }
-function setSpk(i){ S.cur=i; renderSpk(); }
-function addSpk(){
-  const v=$('newSpk').value.trim(); if(!v) return;
-  S.speakers.push({n:v}); $('newSpk').value=''; renderSpk(); renderTr();
-}
-function rmSpk(i){
-  if(S.speakers.length<=1) return toast('ต้องมีผู้พูดอย่างน้อย 1 คน');
-  S.speakers.splice(i,1);
-  S.segments.forEach(g=>{ if(g.sp===i) g.sp=0; else if(g.sp>i) g.sp--; });
-  if(S.cur>=S.speakers.length) S.cur=0;
-  renderSpk(); renderTr();
-}
+function setSpk(i){ if(i>=0 && i<S.speakers.length) S.cur=i; }
 
 /* ══════════════════ RECORDING ══════════════════ */
 async function startRec(){
@@ -642,11 +575,7 @@ function importPaste(){
     let name=null, tx=line.trim();
     if(m){ name=m[1].trim(); tx=m[2].trim(); }
     let sp=0;
-    if(name){
-      let idx=S.speakers.findIndex(s=>s.n.toLowerCase().startsWith(name.toLowerCase())||name.toLowerCase().startsWith(s.n.split(' ')[0].toLowerCase()));
-      if(idx<0){ S.speakers.push({n:name}); idx=S.speakers.length-1; }
-      sp=idx;
-    }
+    if(name){ const found=name.match(/(?:ผู้พูด|speaker)\s*([1-3])/i); if(found) sp=+found[1]-1; }
     t+=6000;
     S.segments.push({t, sp, tx, c:1});
   });
@@ -783,7 +712,6 @@ function renderSum(){
     <div class="row" style="margin-top:15px">
       <button class="btn gh" onclick="exportMom()">⬇ Export MOM (.md)</button>
       <button class="btn gh" onclick="copyMom()">📋 คัดลอก MOM</button>
-      <button class="btn" onclick="document.querySelector('[data-t=dg]').click()">→ ไปทำ Process Diagram</button>
     </div>
   </div>
   <div class="card">
@@ -961,7 +889,7 @@ function loadSession(inp){
     const d=JSON.parse(r.result);
     $('mTitle').value=d.meta.title||''; $('mClient').value=d.meta.client||'';
     $('mDate').value=d.meta.date||''; $('mLang').value=d.meta.lang||'th-TH';
-    S.speakers=d.speakers||S.speakers; S.segments=d.segments||[]; S.summary=d.summary||null; S.steps=d.steps||[];
+    S.speakers=[{n:'ผู้พูด 1'},{n:'ผู้พูด 2'},{n:'ผู้พูด 3'}]; S.segments=d.segments||[]; S.summary=d.summary||null; S.steps=d.steps||[];
     $('dgTitle').value=d.dgTitle||''; $('dgTitleEn').value=d.dgTitleEn||'';
     renderSpk(); renderTr(); renderLive(); if(S.summary) renderSum(); renderStepEd(); renderDg();
     toast('โหลด session แล้ว');
