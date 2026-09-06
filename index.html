@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MeetingScribe — บันทึก / ถอดเสียง / สรุป / Process Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D0D12;--surface:#141420;--node:#1C1F2E;--node2:#1A2235;
+  --cyan:#00C8D4;--cyan-d:rgba(0,200,212,.15);
+  --cyan-g:0 0 12px rgba(0,200,212,.5),0 0 28px rgba(0,200,212,.18);
+  --orange:#FF6B35;--orange-d:rgba(255,107,53,.15);
+  --orange-g:0 0 12px rgba(255,107,53,.5),0 0 28px rgba(255,107,53,.18);
+  --green:#2ECC8F;--red:#FF4D5E;
+  --white:#FFFFFF;--gray:#A0AEC0;--border:rgba(255,255,255,.08);
+  --r:12px;--r-lg:18px
+}
+body{font-family:'Sarabun','Inter',sans-serif;background:var(--bg);color:var(--white);
+  min-height:100vh;line-height:1.6;font-size:15px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:#2A3145;border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:#3A4460}
+
+/* ---------- layout ---------- */
+header.app{padding:20px 32px 0;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(0,200,212,.05) 0%,transparent 100%);position:sticky;top:0;z-index:50;backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.logo{width:40px;height:40px;border-radius:11px;background:var(--node2);
+  border:1.5px solid var(--cyan);box-shadow:var(--cyan-g);display:flex;align-items:center;
+  justify-content:center;font-size:1.15rem;flex-shrink:0}
+.brand h1{font-size:1.18rem;font-weight:700;letter-spacing:.01em}
+.brand .sub{font-size:.72rem;color:var(--gray);letter-spacing:.12em;text-transform:uppercase;font-family:'Inter'}
+.tabs{display:flex;gap:4px;overflow-x:auto}
+.tab{padding:11px 18px;font-size:.86rem;font-weight:600;color:var(--gray);cursor:pointer;
+  border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;transition:.15s}
+.tab:hover{color:#fff}
+.tab.on{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 14px rgba(0,200,212,.6)}
+main{max-width:1180px;margin:0 auto;padding:28px 32px 80px}
+.panel{display:none}.panel.on{display:block}
+
+/* ---------- primitives ---------- */
+.card{background:var(--node);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;margin-bottom:18px}
+.card.cy{border-color:rgba(0,200,212,.28)}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+.card .hint{font-size:.8rem;color:var(--gray);margin-bottom:16px}
+.eyebrow{font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--cyan);display:flex;align-items:center;gap:8px;margin-bottom:9px;font-family:'Inter'}
+.eyebrow::before{content:"";width:22px;height:1.5px;background:var(--cyan)}
+button.btn{font-family:inherit;font-size:.84rem;font-weight:600;padding:9px 17px;border-radius:9px;
+  border:1px solid rgba(0,200,212,.35);background:var(--cyan-d);color:var(--cyan);cursor:pointer;transition:.15s}
+button.btn:hover{background:rgba(0,200,212,.26);box-shadow:var(--cyan-g)}
+button.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;background:var(--cyan-d)}
+button.btn.solid{background:var(--cyan);color:#000;border-color:var(--cyan)}
+button.btn.solid:hover{box-shadow:var(--cyan-g)}
+button.btn.or{border-color:rgba(255,107,53,.4);background:var(--orange-d);color:var(--orange)}
+button.btn.or:hover{background:rgba(255,107,53,.26);box-shadow:var(--orange-g)}
+button.btn.gh{border-color:var(--border);background:transparent;color:var(--gray)}
+button.btn.gh:hover{color:#fff;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04);box-shadow:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input.f,select.f,textarea.f{font-family:inherit;font-size:.86rem;background:#12151F;color:#fff;
+  border:1px solid var(--border);border-radius:9px;padding:9px 12px;width:100%}
+input.f:focus,select.f:focus,textarea.f:focus{outline:none;border-color:rgba(0,200,212,.5);box-shadow:0 0 0 3px rgba(0,200,212,.09)}
+textarea.f{resize:vertical;line-height:1.65}
+label.lb{font-size:.72rem;color:var(--gray);display:block;margin-bottom:5px;font-weight:600;letter-spacing:.04em}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.pill{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Inter';letter-spacing:.04em}
+.pill.cy{background:var(--cyan);color:#000}
+.pill.or{background:var(--orange);color:#000}
+.pill.gh{background:rgba(255,255,255,.08);color:var(--gray)}
+.note{background:var(--cyan-d);border:1px solid rgba(0,200,212,.3);border-left:3px solid var(--cyan);
+  border-radius:var(--r);padding:13px 16px;font-size:.83rem;display:flex;gap:10px;align-items:flex-start;margin:12px 0}
+.warn{background:var(--orange-d);border:1px solid rgba(255,107,53,.3);border-left:3px solid var(--orange);
+  border-radius:var(--r);padding:13px 16px;font-size:.83rem;display:flex;gap:10px;align-items:flex-start;margin:12px 0}
+
+/* ---------- recorder ---------- */
+.rec-wrap{display:grid;grid-template-columns:1fr 320px;gap:18px}
+@media(max-width:900px){.rec-wrap{grid-template-columns:1fr}}
+.rec-hero{background:linear-gradient(145deg,#1A2235,#141824);border:1px solid rgba(0,200,212,.25);
+  border-radius:var(--r-lg);padding:26px;text-align:center}
+.timer{font-family:'Inter';font-size:2.9rem;font-weight:800;letter-spacing:.02em;line-height:1.1}
+.timer.live{color:var(--cyan);text-shadow:0 0 24px rgba(0,200,212,.55)}
+.status{font-size:.75rem;color:var(--gray);letter-spacing:.12em;text-transform:uppercase;font-family:'Inter';margin-top:4px}
+.meter{height:6px;background:#10131C;border-radius:4px;overflow:hidden;margin:18px 0 6px}
+.meter i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),#7CF7FF);
+  box-shadow:0 0 12px rgba(0,200,212,.7);transition:width .08s}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--red);display:inline-block;margin-right:7px}
+.dot.blink{animation:bl 1.1s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.25}}
+.spk-list{display:flex;flex-direction:column;gap:8px;max-height:330px;overflow:auto}
+.spk{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--border);background:#12151F;transition:.12s}
+.spk:hover{border-color:rgba(255,255,255,.2)}
+.spk.on{border-color:var(--cyan);background:var(--cyan-d);box-shadow:var(--cyan-g)}
+.spk .av{width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.74rem;font-weight:800;color:#000;font-family:'Inter';flex-shrink:0}
+.spk .nm{font-size:.85rem;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spk .key{font-size:.66rem;color:var(--gray);font-family:'Inter';background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px}
+.live-box{background:#0F121B;border:1px dashed rgba(0,200,212,.3);border-radius:var(--r);
+  padding:14px 16px;min-height:82px;font-size:.92rem;color:var(--gray);margin-top:14px}
+.live-box b{color:var(--cyan)}
+
+/* ---------- transcript ---------- */
+.seg{display:grid;grid-template-columns:88px 150px 1fr 30px;gap:12px;padding:11px 12px;border-radius:10px;
+  border:1px solid transparent;align-items:start}
+.seg:hover{background:rgba(255,255,255,.028);border-color:var(--border)}
+.seg .ts{font-family:'Inter';font-size:.74rem;color:var(--gray);padding-top:7px}
+.seg .tx{font-size:.92rem;line-height:1.7;padding:6px 8px;border-radius:7px;border:1px solid transparent;min-height:20px}
+.seg .tx:focus{outline:none;background:#12151F;border-color:rgba(0,200,212,.4)}
+.seg select{font-family:inherit;font-size:.78rem;background:#12151F;color:#fff;border:1px solid var(--border);
+  border-radius:7px;padding:6px 7px;width:100%}
+.del{background:none;border:none;color:#4A5568;cursor:pointer;font-size:1rem;padding:6px}
+.del:hover{color:var(--red)}
+.stats{display:flex;gap:22px;font-size:.76rem;color:var(--gray);font-family:'Inter';flex-wrap:wrap}
+.stats b{color:var(--cyan);font-weight:700}
+
+/* ---------- summary ---------- */
+.sum-sec{margin-bottom:22px}
+.sum-sec h3{font-size:.86rem;font-weight:700;color:var(--cyan);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:11px;font-family:'Inter';display:flex;align-items:center;gap:8px}
+.sum-sec h3::before{content:"";width:16px;height:1.5px;background:var(--cyan)}
+.tp{background:#12151F;border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:10px;padding:14px 17px;margin-bottom:11px}
+.tp .t{font-weight:700;font-size:.95rem;margin-bottom:7px}
+.tp ul{margin:0 0 0 18px;font-size:.87rem;color:#D5DDE8}
+.tp li{margin-bottom:4px}
+.quote{border-left:2px solid var(--orange);padding:7px 0 7px 13px;margin:9px 0 0;font-size:.85rem;color:#D5DDE8}
+.quote .who{color:var(--orange);font-weight:700;font-size:.78rem;display:block;margin-bottom:2px;font-family:'Inter'}
+table.t{width:100%;border-collapse:collapse;font-size:.85rem}
+table.t th{text-align:left;padding:9px 12px;background:#12151F;color:var(--cyan);font-size:.7rem;
+  text-transform:uppercase;letter-spacing:.1em;font-family:'Inter';border-bottom:1px solid var(--border)}
+table.t td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top}
+.spinner{width:15px;height:15px;border:2px solid rgba(0,200,212,.25);border-top-color:var(--cyan);
+  border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- diagram preview ---------- */
+#dgPrev{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:34px 26px;overflow:auto}
+.stepEd{display:grid;grid-template-columns:52px 1fr 1fr 130px 34px;gap:9px;align-items:center;margin-bottom:8px}
+@media(max-width:800px){.stepEd{grid-template-columns:1fr}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--node2);
+  border:1px solid rgba(0,200,212,.4);box-shadow:var(--cyan-g);border-radius:11px;padding:11px 20px;
+  font-size:.85rem;z-index:200;opacity:0;pointer-events:none;transition:.25s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+kbd{font-family:'Inter';font-size:.7rem;background:rgba(255,255,255,.09);border:1px solid var(--border);
+  border-radius:5px;padding:1px 6px;color:#fff}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="logo">🎙️</div>
+    <div style="flex:1">
+      <div class="sub">Meeting Capture · Transcribe · Summarize · Diagram</div>
+      <h1>MeetingScribe <span style="color:var(--cyan)">for NetSuite Consultants</span></h1>
+    </div>
+    <div class="row">
+      <button class="btn gh" onclick="saveSession()">💾 Save .json</button>
+      <button class="btn gh" onclick="document.getElementById('loadF').click()">📂 Load</button>
+      <input type="file" id="loadF" accept=".json" style="display:none" onchange="loadSession(this)">
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-t="rec">1 · บันทึกเสียง</button>
+    <button class="tab" data-t="tr">2 · Transcript</button>
+    <button class="tab" data-t="sum">3 · สรุปประชุม</button>
+    <button class="tab" data-t="dg">4 · Process Diagram</button>
+    <button class="tab" data-t="hp">คู่มือ / Setup</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════ TAB 1 : RECORD ══════════ -->
+<section class="panel on" id="p-rec">
+  <div class="card cy">
+    <div class="eyebrow">Meeting Info</div>
+    <div class="grid2">
+      <div><label class="lb">หัวข้อประชุม</label><input class="f" id="mTitle" placeholder="เช่น Inventory Process Workshop"></div>
+      <div><label class="lb">ลูกค้า / โปรเจกต์</label><input class="f" id="mClient" placeholder="เช่น ABC Manufacturing"></div>
+      <div><label class="lb">วันที่</label><input class="f" type="date" id="mDate"></div>
+      <div><label class="lb">ภาษาที่พูด</label>
+        <select class="f" id="mLang">
+          <option value="th-TH">ไทย (th-TH)</option>
+          <option value="en-US">English (en-US)</option>
+          <option value="en-GB">English UK (en-GB)</option>
+        </select></div>
+    </div>
+  </div>
+
+  <div class="rec-wrap">
+    <div>
+      <div class="rec-hero">
+        <div class="timer" id="timer">00:00:00</div>
+        <div class="status" id="status">พร้อมบันทึก</div>
+        <div class="meter"><i id="meter"></i></div>
+        <div class="row" style="justify-content:center;margin-top:18px">
+          <button class="btn solid" id="btnStart" onclick="startRec()">● เริ่มบันทึก</button>
+          <button class="btn or" id="btnPause" onclick="togglePause()" disabled>⏸ พัก</button>
+          <button class="btn gh" id="btnStop" onclick="stopRec()" disabled>■ หยุด</button>
+        </div>
+        <div class="row" style="justify-content:center;margin-top:12px">
+          <label style="font-size:.78rem;color:var(--gray);display:flex;align-items:center;gap:7px;cursor:pointer">
+            <input type="checkbox" id="optSys"> จับเสียง Tab/หน้าจอด้วย (สำหรับ Zoom / Teams / Meet)
+          </label>
+        </div>
+      </div>
+
+      <div class="live-box" id="liveBox">รอเริ่มบันทึก… ข้อความที่ระบบกำลังฟังจะขึ้นตรงนี้แบบ real-time</div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="eyebrow">Live Transcript</div>
+        <div id="liveList" style="max-height:340px;overflow:auto;font-size:.9rem"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <h2>👥 ผู้พูด</h2>
+        <div class="hint">กดเลือก “คนที่กำลังพูด” หรือกดปุ่มเลข <kbd>1</kbd>–<kbd>9</kbd> ระหว่างประชุม ระบบจะติดชื่อให้ทุกประโยคอัตโนมัติ</div>
+        <div class="spk-list" id="spkList"></div>
+        <div class="row" style="margin-top:11px">
+          <input class="f" id="newSpk" placeholder="ชื่อ + ตำแหน่ง" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')addSpk()">
+          <button class="btn" onclick="addSpk()">+ เพิ่ม</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Audio File</div>
+        <div class="hint" style="margin-bottom:10px">ไฟล์เสียงเก็บไว้เป็นหลักฐาน / ส่งไปถอดซ้ำด้วย ASR ที่แม่นกว่าได้</div>
+        <button class="btn gh" id="btnAudio" onclick="dlAudio()" disabled style="width:100%">⬇ ดาวน์โหลดไฟล์เสียง (.webm)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TAB 2 : TRANSCRIPT ══════════ -->
+<section class="panel" id="p-tr">
+  <div class="card cy">
+    <div class="eyebrow">Transcript Editor</div>
+    <div class="row" style="justify-content:space-between">
+      <div class="stats" id="trStats"></div>
+      <div class="row">
+        <button class="btn gh" onclick="exportTxt()">⬇ .txt</button>
+        <button class="btn gh" onclick="exportMd()">⬇ .md</button>
+        <button class="btn gh" onclick="copyTranscript()">📋 คัดลอก</button>
+        <button class="btn or" onclick="clearAll()">ล้างทั้งหมด</button>
+      </div>
+    </div>
+    <div class="note">💡 แก้ข้อความได้โดยคลิกที่บรรทัดนั้นตรง ๆ · เปลี่ยนชื่อผู้พูดได้จาก dropdown · Web Speech ถอดไทยได้ ~85–92% ควรไล่แก้คำเฉพาะทาง (ชื่อ item, module) ก่อนสรุป</div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <input class="f" id="trSearch" placeholder="🔍 ค้นหาในสคริปต์…" style="flex:1;min-width:160px" oninput="renderTr()">
+      <button class="btn gh" onclick="document.getElementById('pasteBox').style.display='block'">＋ วาง Transcript ที่มีอยู่แล้ว</button>
+    </div>
+    <div id="pasteBox" style="display:none;margin-bottom:16px">
+      <label class="lb">วางสคริปต์จาก Teams / Zoom / Google Meet / Otter (รูปแบบ “ชื่อ: ข้อความ” ต่อบรรทัด)</label>
+      <textarea class="f" id="pasteTa" rows="7" placeholder="สมชาย: เราต้องการให้ระบบตัดสต๊อกตอน Item Fulfillment&#10;วรรณา: แต่ตอนนี้ทีมคลังยังตัดตอน Invoice อยู่"></textarea>
+      <div class="row" style="margin-top:9px">
+        <button class="btn solid" onclick="importPaste()">นำเข้า</button>
+        <button class="btn gh" onclick="document.getElementById('pasteBox').style.display='none'">ยกเลิก</button>
+      </div>
+    </div>
+    <div id="trList"></div>
+  </div>
+</section>
+
+<!-- ══════════ TAB 3 : SUMMARY ══════════ -->
+<section class="panel" id="p-sum">
+  <div class="card cy">
+    <div class="eyebrow">AI Summarization</div>
+    <h2>สรุปประชุม + ใครพูดอะไร</h2>
+    <div class="hint">สร้าง MOM ครบชุด: หัวข้อหลัก · ประเด็นรายคน · ข้อตกลง · Action Items · Open Issues · Risk + โครง Process สำหรับทำ Diagram</div>
+    <div class="row">
+      <button class="btn solid" id="btnAI" onclick="runAI()">✨ สรุปด้วย AI (ในตัว)</button>
+      <button class="btn" onclick="copyPrompt()">📋 คัดลอก Prompt → วางใน Claude</button>
+      <button class="btn gh" onclick="document.getElementById('jsonBox').style.display='block'">📥 วางผลลัพธ์ JSON กลับเข้ามา</button>
+      <span id="aiStat" style="font-size:.82rem;color:var(--gray)"></span>
+    </div>
+    <div class="warn" id="apiWarn" style="display:none">⚠️ <span>เรียก AI ในตัวไม่ได้ (ปกติเกิดเมื่อเปิดไฟล์นี้จากเครื่องตัวเอง) — ใช้ปุ่ม <b>คัดลอก Prompt</b> ไปวางใน Claude แล้วเอา JSON ที่ได้กลับมาวางในช่อง <b>วางผลลัพธ์ JSON</b> ผลลัพธ์เหมือนกันทุกอย่าง</span></div>
+    <div id="jsonBox" style="display:none;margin-top:14px">
+      <label class="lb">วาง JSON ที่ได้จาก Claude ที่นี่</label>
+      <textarea class="f" id="jsonTa" rows="7" placeholder='{"meta":{...},"topics":[...],"process":{...}}'></textarea>
+      <div class="row" style="margin-top:9px">
+        <button class="btn solid" onclick="applyJson()">ใช้ผลลัพธ์นี้</button>
+        <button class="btn gh" onclick="document.getElementById('jsonBox').style.display='none'">ปิด</button>
+      </div>
+    </div>
+  </div>
+  <div id="sumOut"></div>
+</section>
+
+<!-- ══════════ TAB 4 : DIAGRAM ══════════ -->
+<section class="panel" id="p-dg">
+  <div class="card cy">
+    <div class="eyebrow">Process Diagram Builder</div>
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h2>สร้าง Process HTML จากเนื้อหาที่สรุปได้</h2>
+        <div class="hint" style="margin:0">ธีม dark tech-premium · cyan = main flow · orange = exception/decision · export เป็น HTML ไฟล์เดียว ส่งลูกค้าได้เลย</div>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="renderDg()">↻ Refresh</button>
+        <button class="btn solid" onclick="exportDg()">⬇ Export Diagram HTML</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Step Editor</div>
+    <div class="row" style="margin-bottom:12px">
+      <input class="f" id="dgTitle" placeholder="ชื่อ Process (ไทย)" style="flex:1;min-width:180px">
+      <input class="f" id="dgTitleEn" placeholder="English name" style="flex:1;min-width:150px">
+    </div>
+    <div class="stepEd" style="font-size:.68rem;color:var(--gray);text-transform:uppercase;letter-spacing:.1em;font-family:'Inter'">
+      <div>Step</div><div>ชื่อขั้นตอน</div><div>คำอธิบาย</div><div>Actor / Type</div><div></div>
+    </div>
+    <div id="stepList"></div>
+    <div class="row" style="margin-top:11px">
+      <button class="btn" onclick="addStep()">+ เพิ่ม Step</button>
+      <button class="btn gh" onclick="addStep('decision')">+ เพิ่ม Decision</button>
+      <button class="btn gh" onclick="addStep('exception')">+ เพิ่ม Exception</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Preview</div>
+    <div id="dgPrev"></div>
+  </div>
+</section>
+
+<!-- ══════════ TAB 5 : HELP ══════════ -->
+<section class="panel" id="p-hp">
+  <div class="card cy">
+    <div class="eyebrow">Setup</div>
+    <h2>เปิดใช้งานยังไงให้ได้ผลดีที่สุด</h2>
+    <div class="hint">อ่านครั้งเดียว ใช้ได้ตลอด</div>
+
+    <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">1. Browser</h3>
+    <p style="font-size:.87rem;color:#D5DDE8">ใช้ <b>Chrome หรือ Edge</b> เท่านั้น (Web Speech API ไม่รองรับใน Firefox/Safari) และต้องต่อ internet เพราะการถอดเสียงประมวลผลที่ Google server</p>
+
+    <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">2. ประชุมในห้อง (แบบเจอหน้า)</h3>
+    <p style="font-size:.87rem;color:#D5DDE8">วางโน้ตบุ๊คกลางโต๊ะ → กด <b>เริ่มบันทึก</b> → เลือกชื่อคนที่กำลังพูดด้วยปุ่ม <kbd>1</kbd>–<kbd>9</kbd> ระบบจะติดชื่อให้ทุกประโยค แม่นที่สุดถ้าใช้ไมค์ประชุม USB</p>
+
+    <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">3. ประชุมออนไลน์ (Zoom / Teams / Meet)</h3>
+    <div class="warn">⚠️ <span><b>ข้อจำกัดจริงที่ต้องรู้:</b> Web Speech API ถอดเสียงได้จาก <b>ไมโครโฟน</b> เท่านั้น — ไม่สามารถถอดจากเสียง Tab ที่แชร์เข้ามาได้โดยตรง (เป็นข้อจำกัดของ Chrome เอง ไม่ใช่ bug ของ tool)</span></div>
+    <p style="font-size:.87rem;color:#D5DDE8">มี 3 ทางออก เรียงตามคุณภาพ:</p>
+    <ul style="font-size:.87rem;color:#D5DDE8;margin:8px 0 0 20px;line-height:1.9">
+      <li><b>ดีที่สุด —</b> ติดตั้ง virtual audio cable (<b>VB-Cable</b> บน Windows / <b>BlackHole</b> บน Mac) แล้วตั้งเป็น default input → เสียงทุกคนในห้องประชุมออนไลน์วิ่งเข้าไมค์ ระบบถอดได้ครบ</li>
+      <li><b>ง่ายที่สุด —</b> ถอดหูฟัง เปิดเสียงประชุมออกลำโพง แล้วให้ไมค์โน้ตบุ๊ครับเสียงทั้งห้อง (คุณภาพลดลงบ้าง แต่ใช้ได้จริง)</li>
+      <li><b>สำรอง —</b> ติ๊ก “จับเสียง Tab/หน้าจอ” เพื่อ<b>อัดไฟล์เสียง</b>ไว้ แล้วเอาไฟล์ .webm ไปถอดด้วย ASR ที่แม่นกว่า (Whisper / AssemblyAI / Teams transcript) แล้วเอาสคริปต์มาวางที่ Tab 2 → ปุ่ม “วาง Transcript ที่มีอยู่แล้ว”</li>
+    </ul>
+
+    <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">4. เส้นทางที่แนะนำสำหรับงานลูกค้า</h3>
+    <p style="font-size:.87rem;color:#D5DDE8">ถ้าประชุมสำคัญ (Workshop / UAT / Steering) ให้ใช้ <b>Teams/Zoom transcript</b> ที่มี speaker แยกมาให้อยู่แล้ว → วางเข้า Tab 2 → สรุป Tab 3 → ทำ Diagram Tab 4 · จะได้ทั้งความแม่นและความเร็ว</p>
+
+    <h3 style="font-size:.9rem;color:var(--cyan);margin:16px 0 8px">5. ทางลัดคีย์บอร์ด</h3>
+    <p style="font-size:.87rem;color:#D5DDE8"><kbd>1</kbd>–<kbd>9</kbd> เปลี่ยนผู้พูด · <kbd>Ctrl</kbd>+<kbd>Space</kbd> เริ่ม/หยุดบันทึก · <kbd>Ctrl</kbd>+<kbd>S</kbd> เซฟ session</p>
+
+    <div class="note">🔒 <span>ข้อมูลทุกอย่างอยู่ในเครื่องคุณ ไม่มีการอัปโหลดที่ไหน ยกเว้นตอนกด “สรุปด้วย AI” เท่านั้น — สำหรับลูกค้าที่มี NDA เข้ม แนะนำถอดชื่อจริงออกก่อนสรุป</span></div>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════ STATE ══════════════════ */
+const AV = ['#00C8D4','#FF6B35','#2ECC8F','#B47CFF','#FFD166','#4D9DFF','#FF7CA8','#7CF7FF','#9CE37D'];
+const S = {
+  speakers: [{n:'ผมเอง (Consultant)'},{n:'ลูกค้า - Key User'},{n:'ลูกค้า - Manager'}],
+  cur: 0, segments: [], recording:false, paused:false, t0:0, elapsed:0,
+  audioURL:null, summary:null, steps:[], lastFinal:0
+};
+let rec=null, mr=null, chunks=[], micStream=null, sysStream=null, ac=null, analyser=null, tick=null, raf=null;
+
+/* ══════════════════ UTIL ══════════════════ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hhmmss = ms => { const t=Math.floor(ms/1000); return [t/3600,t%3600/60,t%60].map(v=>String(Math.floor(v)).padStart(2,'0')).join(':'); };
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
+function dl(name, content, type){
+  const b = content instanceof Blob ? content : new Blob([content],{type:type||'text/plain;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+/* ══════════════════ TABS ══════════════════ */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $('p-'+b.dataset.t).classList.add('on');
+  if(b.dataset.t==='tr') renderTr();
+  if(b.dataset.t==='dg'){ renderStepEd(); renderDg(); }
+});
+
+/* ══════════════════ SPEAKERS ══════════════════ */
+function renderSpk(){
+  $('spkList').innerHTML = S.speakers.map((s,i)=>`
+    <div class="spk ${i===S.cur?'on':''}" onclick="setSpk(${i})">
+      <div class="av" style="background:${AV[i%AV.length]}">${esc(s.n.trim().charAt(0)||'?')}</div>
+      <div class="nm" title="${esc(s.n)}">${esc(s.n)}</div>
+      <span class="key">${i<9?i+1:''}</span>
+      <button class="del" onclick="event.stopPropagation();rmSpk(${i})">✕</button>
+    </div>`).join('');
+}
+function setSpk(i){ S.cur=i; renderSpk(); }
+function addSpk(){
+  const v=$('newSpk').value.trim(); if(!v) return;
+  S.speakers.push({n:v}); $('newSpk').value=''; renderSpk(); renderTr();
+}
+function rmSpk(i){
+  if(S.speakers.length<=1) return toast('ต้องมีผู้พูดอย่างน้อย 1 คน');
+  S.speakers.splice(i,1);
+  S.segments.forEach(g=>{ if(g.sp===i) g.sp=0; else if(g.sp>i) g.sp--; });
+  if(S.cur>=S.speakers.length) S.cur=0;
+  renderSpk(); renderTr();
+}
+
+/* ══════════════════ RECORDING ══════════════════ */
+async function startRec(){
+  if(S.recording) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  }catch(e){ return toast('เข้าถึงไมโครโฟนไม่ได้: '+e.message); }
+
+  if($('optSys').checked){
+    try{
+      sysStream = await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+      if(!sysStream.getAudioTracks().length) toast('ไม่ได้เลือก "Share tab audio" — จะอัดเฉพาะไมค์');
+    }catch(e){ sysStream=null; }
+  }
+
+  // mix + record
+  try{
+    ac = new (window.AudioContext||window.webkitAudioContext)();
+    const dest = ac.createMediaStreamDestination();
+    ac.createMediaStreamSource(micStream).connect(dest);
+    if(sysStream && sysStream.getAudioTracks().length) ac.createMediaStreamSource(sysStream).connect(dest);
+    analyser = ac.createAnalyser(); analyser.fftSize=512;
+    ac.createMediaStreamSource(micStream).connect(analyser);
+    chunks=[];
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
+    mr = new MediaRecorder(dest.stream,{mimeType:mime});
+    mr.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    mr.onstop = () => {
+      if(!chunks.length) return;
+      S.audioURL = URL.createObjectURL(new Blob(chunks,{type:'audio/webm'}));
+      $('btnAudio').disabled=false;
+    };
+    mr.start(1000);
+    drawMeter();
+  }catch(e){ console.warn('recorder',e); }
+
+  // speech recognition
+  if(SR){
+    rec = new SR();
+    rec.lang = $('mLang').value; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+    rec.onresult = e => {
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal) pushSeg(r[0].transcript.trim(), r[0].confidence);
+        else interim += r[0].transcript;
+      }
+      $('liveBox').innerHTML = interim ? `<b>${esc(S.speakers[S.cur].n)}:</b> ${esc(interim)}…`
+        : `<span style="opacity:.5">กำลังฟัง… (ผู้พูดปัจจุบัน: <b>${esc(S.speakers[S.cur].n)}</b>)</span>`;
+    };
+    rec.onerror = e => { if(e.error==='not-allowed') toast('ไม่ได้รับสิทธิ์ไมโครโฟน'); else if(e.error!=='no-speech') console.warn('SR',e.error); };
+    rec.onend = () => { if(S.recording && !S.paused){ try{ rec.start(); }catch(e){} } };
+    try{ rec.start(); }catch(e){}
+  } else {
+    toast('เบราว์เซอร์นี้ไม่รองรับการถอดเสียง — จะอัดไฟล์เสียงอย่างเดียว');
+  }
+
+  S.recording=true; S.paused=false; S.t0=Date.now()-S.elapsed;
+  $('btnStart').disabled=true; $('btnPause').disabled=false; $('btnStop').disabled=false;
+  $('timer').classList.add('live');
+  $('status').innerHTML='<span class="dot blink"></span>กำลังบันทึก';
+  tick = setInterval(()=>{ S.elapsed=Date.now()-S.t0; $('timer').textContent=hhmmss(S.elapsed); },250);
+  if(!$('mDate').value) $('mDate').valueAsDate=new Date();
+}
+
+function togglePause(){
+  if(!S.recording) return;
+  S.paused=!S.paused;
+  if(S.paused){
+    try{ mr && mr.state==='recording' && mr.pause(); }catch(e){}
+    try{ rec && rec.stop(); }catch(e){}
+    clearInterval(tick);
+    $('btnPause').textContent='▶ ทำต่อ'; $('status').textContent='พักอยู่'; $('timer').classList.remove('live');
+  }else{
+    try{ mr && mr.state==='paused' && mr.resume(); }catch(e){}
+    try{ rec && rec.start(); }catch(e){}
+    S.t0=Date.now()-S.elapsed;
+    tick=setInterval(()=>{ S.elapsed=Date.now()-S.t0; $('timer').textContent=hhmmss(S.elapsed); },250);
+    $('btnPause').textContent='⏸ พัก'; $('status').innerHTML='<span class="dot blink"></span>กำลังบันทึก'; $('timer').classList.add('live');
+  }
+}
+
+function stopRec(){
+  S.recording=false; S.paused=false;
+  clearInterval(tick); cancelAnimationFrame(raf);
+  try{ rec && rec.stop(); }catch(e){} rec=null;
+  try{ mr && mr.state!=='inactive' && mr.stop(); }catch(e){}
+  [micStream,sysStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));
+  micStream=sysStream=null;
+  analyser=null;
+  try{ ac && ac.close(); }catch(e){} ac=null;
+  $('btnStart').disabled=false; $('btnPause').disabled=true; $('btnStop').disabled=true;
+  $('btnPause').textContent='⏸ พัก';
+  $('timer').classList.remove('live'); $('status').textContent='หยุดแล้ว — '+S.segments.length+' ประโยค';
+  $('meter').style.width='0%'; $('liveBox').textContent='บันทึกเสร็จแล้ว ไปที่ Tab 2 เพื่อตรวจแก้สคริปต์';
+  toast('บันทึกเสร็จ · '+S.segments.length+' ประโยค');
+}
+
+function drawMeter(){
+  if(!analyser) return;
+  const buf=new Uint8Array(analyser.frequencyBinCount);
+  const loop=()=>{
+    if(!analyser) return;
+    analyser.getByteFrequencyData(buf);
+    const avg=buf.reduce((a,b)=>a+b,0)/buf.length;
+    $('meter').style.width=Math.min(100,avg*1.7)+'%';
+    raf=requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+function pushSeg(text, conf){
+  if(!text) return;
+  const now=S.elapsed, gap=now-S.lastFinal;
+  const last=S.segments[S.segments.length-1];
+  // ต่อประโยคเดิมถ้าคนเดิมพูดต่อเนื่องภายใน 4 วินาที
+  if(last && last.sp===S.cur && gap<4000){ last.tx += ' '+text; }
+  else S.segments.push({t:now, sp:S.cur, tx:text, c:conf||0, chg: gap>2500});
+  S.lastFinal=now;
+  renderLive();
+}
+function renderLive(){
+  const L=$('liveList');
+  L.innerHTML = S.segments.slice(-40).map(g=>`
+    <div style="margin-bottom:9px;display:flex;gap:9px">
+      <span style="font-family:'Inter';font-size:.7rem;color:var(--gray);flex-shrink:0;padding-top:3px">${hhmmss(g.t)}</span>
+      <span style="color:${AV[g.sp%AV.length]};font-weight:700;font-size:.8rem;flex-shrink:0">${esc(S.speakers[g.sp]?S.speakers[g.sp].n.split(' ')[0]:'?')}</span>
+      <span style="color:#D5DDE8">${esc(g.tx)}</span>
+    </div>`).join('');
+  L.scrollTop=L.scrollHeight;
+}
+
+function dlAudio(){
+  if(!S.audioURL) return;
+  const a=document.createElement('a'); a.href=S.audioURL;
+  a.download=(($('mTitle').value||'meeting').replace(/\s+/g,'_'))+'_'+($('mDate').value||'')+'.webm'; a.click();
+}
+
+/* ══════════════════ TRANSCRIPT ══════════════════ */
+function renderTr(){
+  const q=($('trSearch').value||'').toLowerCase();
+  const opts = i => S.speakers.map((s,j)=>`<option value="${j}" ${j===i?'selected':''}>${esc(s.n)}</option>`).join('');
+  const list = S.segments.map((g,i)=>({g,i})).filter(({g})=>!q||g.tx.toLowerCase().includes(q));
+  $('trList').innerHTML = list.length ? list.map(({g,i})=>`
+    <div class="seg">
+      <div class="ts">${hhmmss(g.t)}</div>
+      <div><select onchange="S.segments[${i}].sp=+this.value;renderTr()">${opts(g.sp)}</select></div>
+      <div class="tx" contenteditable spellcheck="false" oninput="S.segments[${i}].tx=this.textContent">${esc(g.tx)}</div>
+      <button class="del" onclick="S.segments.splice(${i},1);renderTr()">✕</button>
+    </div>`).join('')
+    : `<div style="text-align:center;color:var(--gray);padding:38px;font-size:.88rem">ยังไม่มีสคริปต์ — เริ่มบันทึกที่ Tab 1 หรือกด “วาง Transcript ที่มีอยู่แล้ว”</div>`;
+  const words = S.segments.reduce((a,g)=>a+g.tx.length,0);
+  const per = S.speakers.map((s,i)=>({n:s.n, c:S.segments.filter(g=>g.sp===i).reduce((a,g)=>a+g.tx.length,0)}))
+    .filter(x=>x.c>0).sort((a,b)=>b.c-a.c);
+  $('trStats').innerHTML = `<span>ประโยค <b>${S.segments.length}</b></span><span>ตัวอักษร <b>${words}</b></span>`+
+    `<span>ความยาว <b>${hhmmss(S.segments.length?S.segments[S.segments.length-1].t:0)}</b></span>`+
+    per.slice(0,4).map(x=>`<span>${esc(x.n.split(' ')[0])} <b>${Math.round(x.c/words*100)}%</b></span>`).join('');
+}
+function importPaste(){
+  const raw=$('pasteTa').value.trim(); if(!raw) return;
+  const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+  let t=S.segments.length?S.segments[S.segments.length-1].t:0;
+  lines.forEach(line=>{
+    // จับรูปแบบ  [00:01:23] ชื่อ: ข้อความ   /  ชื่อ: ข้อความ
+    const m=line.match(/^\s*(?:[\[(]?\d{1,2}:\d{2}(?::\d{2})?[\])]?\s*)?([^:：]{1,40})[:：]\s*(.+)$/);
+    let name=null, tx=line.trim();
+    if(m){ name=m[1].trim(); tx=m[2].trim(); }
+    let sp=0;
+    if(name){
+      let idx=S.speakers.findIndex(s=>s.n.toLowerCase().startsWith(name.toLowerCase())||name.toLowerCase().startsWith(s.n.split(' ')[0].toLowerCase()));
+      if(idx<0){ S.speakers.push({n:name}); idx=S.speakers.length-1; }
+      sp=idx;
+    }
+    t+=6000;
+    S.segments.push({t, sp, tx, c:1});
+  });
+  $('pasteTa').value=''; $('pasteBox').style.display='none';
+  renderSpk(); renderTr(); toast('นำเข้า '+lines.length+' บรรทัด');
+}
+function transcriptText(){
+  return S.segments.map(g=>`[${hhmmss(g.t)}] ${S.speakers[g.sp]?S.speakers[g.sp].n:'?'}: ${g.tx}`).join('\n');
+}
+function exportTxt(){ dl(fname('txt'), header()+'\n\n'+transcriptText()); }
+function exportMd(){
+  const md = `# ${$('mTitle').value||'Meeting Transcript'}\n\n`+
+    `**ลูกค้า:** ${$('mClient').value||'-'}  \n**วันที่:** ${$('mDate').value||'-'}  \n`+
+    `**ผู้เข้าร่วม:** ${S.speakers.map(s=>s.n).join(', ')}\n\n---\n\n`+
+    S.segments.map(g=>`**${S.speakers[g.sp]?S.speakers[g.sp].n:'?'}** \`${hhmmss(g.t)}\`  \n${g.tx}\n`).join('\n');
+  dl(fname('md'), md, 'text/markdown;charset=utf-8');
+}
+function copyTranscript(){ navigator.clipboard.writeText(header()+'\n\n'+transcriptText()).then(()=>toast('คัดลอกแล้ว')); }
+function header(){ return `หัวข้อ: ${$('mTitle').value||'-'}\nลูกค้า: ${$('mClient').value||'-'}\nวันที่: ${$('mDate').value||'-'}\nผู้เข้าร่วม: ${S.speakers.map(s=>s.n).join(', ')}`; }
+function fname(ext){ return (($('mTitle').value||'meeting').replace(/[^\w\u0E00-\u0E7F]+/g,'_'))+'_'+($('mDate').value||'')+'.'+ext; }
+function clearAll(){ if(confirm('ล้างสคริปต์ทั้งหมด?')){ S.segments=[]; S.summary=null; S.steps=[]; renderTr(); renderLive(); $('sumOut').innerHTML=''; } }
+
+/* ══════════════════ AI SUMMARY ══════════════════ */
+const SYS = `คุณคือผู้ช่วยของ Senior NetSuite Consultant ในไทย ทำหน้าที่สรุปบันทึกการประชุม (MOM) จาก transcript ที่ถอดจากเสียง
+transcript อาจมีคำผิดจากการถอดเสียง ให้ตีความจากบริบทธุรกิจ/NetSuite และแก้ศัพท์เทคนิคให้ถูกต้อง (เช่น "ไอเทมฟูลฟิลเมนต์" = Item Fulfillment)
+ตอบกลับเป็น JSON เท่านั้น ห้ามมี markdown fence ห้ามมีข้อความอื่นนอก JSON`;
+
+function buildPrompt(){
+  return `${SYS}
+
+# ข้อมูลประชุม
+${header()}
+
+# Transcript
+${transcriptText()}
+
+# สิ่งที่ต้องการ
+วิเคราะห์แล้วตอบเป็น JSON ตาม schema นี้เป๊ะ ๆ:
+
+{
+  "meta": {"title":"หัวข้อประชุม","client":"ลูกค้า","date":"YYYY-MM-DD","attendees":["ชื่อ (บทบาท)"]},
+  "executive": "สรุปภาพรวม 3-4 ประโยค ว่าประชุมเรื่องอะไร ได้ข้อสรุปอะไร ขั้นถัดไปคืออะไร",
+  "topics": [
+    {"topic":"ชื่อหัวข้อ","points":["ประเด็นสำคัญ"],
+     "says":[{"who":"ชื่อผู้พูด","said":"สาระที่คนนี้พูดในหัวข้อนี้ เรียบเรียงใหม่ให้อ่านรู้เรื่อง"}]}
+  ],
+  "decisions": [{"d":"ข้อตกลงที่สรุปได้","by":"ใครตัดสิน"}],
+  "actions": [{"task":"สิ่งที่ต้องทำ","owner":"ผู้รับผิดชอบ","due":"กำหนด หรือ TBD","pri":"High|Medium|Low"}],
+  "issues": [{"i":"ประเด็นค้าง / คำถามที่ยังไม่มีคำตอบ","impact":"ผลกระทบถ้าไม่แก้"}],
+  "risks": [{"r":"ความเสี่ยง","m":"แนวทางลดความเสี่ยง"}],
+  "process": {
+    "title":"ชื่อ Process ภาษาไทย","titleEn":"English Name","module":"Module เช่น Inventory / P2P / O2C",
+    "steps":[{"n":1,"title":"ชื่อขั้นตอน","desc":"สิ่งที่เกิดขึ้นในขั้นตอนนี้ ระบุ record/หน้าจอ NetSuite ถ้ามี","actor":"ผู้ทำ","type":"process|decision|exception","yes":"ถ้า type=decision ใส่ผลทางใช่","no":"ถ้า type=decision ใส่ผลทางไม่ใช่"}]
+  }
+}
+
+กฎ:
+- ภาษาไทยเป็นหลัก ศัพท์ NetSuite คงภาษาอังกฤษ (Sales Order, Item Fulfillment, Saved Search)
+- "says" ต้องบอกชัดว่าใครพูดอะไร ไม่ใช่สรุปรวม — นี่คือส่วนสำคัญที่สุด
+- process.steps ต้องมี 5–8 ขั้น สกัดจาก process ที่คุยกันในประชุม ถ้าประชุมไม่ได้คุย process ให้สร้างจาก next steps ที่ตกลงกัน
+- decision ต้องเขียนเป็นคำถาม เช่น "สต๊อกพอไหม?"
+- ถ้าข้อมูลไม่พอในหัวข้อไหน ให้ใส่ array ว่าง [] ห้ามแต่งขึ้นมาเอง`;
+}
+
+function copyPrompt(){
+  if(!S.segments.length) return toast('ยังไม่มีสคริปต์');
+  navigator.clipboard.writeText(buildPrompt()).then(()=>{
+    toast('คัดลอก Prompt แล้ว → วางใน Claude');
+    $('jsonBox').style.display='block';
+  });
+}
+
+async function callAPI(prompt, maxTok){
+  // เรียก backend function บน Vercel (/api/summarize) ที่เก็บ API key ไว้ฝั่ง server
+  // ถ้า deploy แบบ static ไม่มี backend → จะได้ 404 แล้ว fallback ไปโหมดคัดลอก Prompt อัตโนมัติ
+  const res = await fetch('/api/summarize',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({prompt, max_tokens:maxTok})
+  });
+  if(!res.ok){
+    let m=''; try{ m=(await res.json()).error||''; }catch(e){}
+    throw new Error('HTTP '+res.status+(m?' — '+m:''));
+  }
+  const data = await res.json();
+  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+}
+
+async function runAI(){
+  if(!S.segments.length) return toast('ยังไม่มีสคริปต์');
+  $('btnAI').disabled=true; $('aiStat').innerHTML='<span class="spinner"></span> กำลังวิเคราะห์…';
+  try{
+    let txt;
+    try{ txt = await callAPI(buildPrompt(), 8000); }
+    catch(e){ txt = await callAPI(buildPrompt(), 1000); }
+    parseAndApply(txt);
+    $('aiStat').textContent='✓ สรุปเสร็จ';
+  }catch(e){
+    $('aiStat').textContent='';
+    $('apiWarn').style.display='flex';
+    $('jsonBox').style.display='block';
+    toast('เรียก AI ไม่สำเร็จ — ใช้วิธีคัดลอก Prompt แทน');
+  }
+  $('btnAI').disabled=false;
+}
+function applyJson(){
+  try{ parseAndApply($('jsonTa').value); $('jsonBox').style.display='none'; toast('ใช้ผลลัพธ์แล้ว'); }
+  catch(e){ toast('JSON ไม่ถูกต้อง: '+e.message); }
+}
+function parseAndApply(txt){
+  const clean = txt.replace(/^```(?:json)?/gm,'').replace(/```$/gm,'').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  const obj = JSON.parse(clean.slice(s, e+1));
+  S.summary = obj;
+  S.steps = (obj.process && obj.process.steps || []).map((x,i)=>({
+    n:x.n||i+1, title:x.title||'', desc:x.desc||'', actor:x.actor||'', type:x.type||'process', yes:x.yes||'', no:x.no||''
+  }));
+  $('dgTitle').value = (obj.process&&obj.process.title)||$('mTitle').value||'';
+  $('dgTitleEn').value = (obj.process&&obj.process.titleEn)||'';
+  renderSum(); renderStepEd(); renderDg();
+}
+
+function renderSum(){
+  const o=S.summary; if(!o) return;
+  const sec=(t,h)=>h?`<div class="sum-sec"><h3>${t}</h3>${h}</div>`:'';
+  $('sumOut').innerHTML = `
+  <div class="card cy">
+    <div class="eyebrow">Minutes of Meeting</div>
+    <h2 style="font-size:1.35rem">${esc(o.meta&&o.meta.title||$('mTitle').value)}</h2>
+    <div style="font-size:.8rem;color:var(--gray);margin-top:4px">
+      ${esc(o.meta&&o.meta.client||'')} ${o.meta&&o.meta.date?'· '+esc(o.meta.date):''} ·
+      ${esc((o.meta&&o.meta.attendees||S.speakers.map(s=>s.n)).join(' · '))}
+    </div>
+    <p style="margin-top:15px;font-size:.94rem;color:#D5DDE8;line-height:1.8">${esc(o.executive||'')}</p>
+    <div class="row" style="margin-top:15px">
+      <button class="btn gh" onclick="exportMom()">⬇ Export MOM (.md)</button>
+      <button class="btn gh" onclick="copyMom()">📋 คัดลอก MOM</button>
+      <button class="btn" onclick="document.querySelector('[data-t=dg]').click()">→ ไปทำ Process Diagram</button>
+    </div>
+  </div>
+  <div class="card">
+  ${sec('หัวข้อหลัก & ใครพูดอะไร',(o.topics||[]).map(t=>`
+    <div class="tp"><div class="t">${esc(t.topic)}</div>
+      <ul>${(t.points||[]).map(p=>`<li>${esc(p)}</li>`).join('')}</ul>
+      ${(t.says||[]).map(s=>`<div class="quote"><span class="who">${esc(s.who)}</span>${esc(s.said)}</div>`).join('')}
+    </div>`).join(''))}
+
+  ${sec('ข้อตกลงที่ได้',(o.decisions||[]).length?`<table class="t"><tr><th style="width:75%">ข้อตกลง</th><th>ผู้ตัดสิน</th></tr>
+    ${o.decisions.map(d=>`<tr><td>${esc(d.d)}</td><td style="color:var(--cyan)">${esc(d.by||'-')}</td></tr>`).join('')}</table>`:'')}
+
+  ${sec('Action Items',(o.actions||[]).length?`<table class="t"><tr><th>สิ่งที่ต้องทำ</th><th>ผู้รับผิดชอบ</th><th>กำหนด</th><th>Priority</th></tr>
+    ${o.actions.map(a=>`<tr><td>${esc(a.task)}</td><td style="color:var(--cyan)">${esc(a.owner||'-')}</td><td>${esc(a.due||'TBD')}</td>
+      <td><span class="pill ${a.pri==='High'?'or':(a.pri==='Medium'?'cy':'gh')}">${esc(a.pri||'-')}</span></td></tr>`).join('')}</table>`:'')}
+
+  ${sec('ประเด็นค้าง (Open Issues)',(o.issues||[]).length?`<table class="t"><tr><th style="width:55%">ประเด็น</th><th>ผลกระทบ</th></tr>
+    ${o.issues.map(x=>`<tr><td>${esc(x.i)}</td><td style="color:var(--gray)">${esc(x.impact||'-')}</td></tr>`).join('')}</table>`:'')}
+
+  ${sec('ความเสี่ยง & แนวทางรับมือ',(o.risks||[]).length?`<table class="t"><tr><th style="width:50%">Risk</th><th>Mitigation</th></tr>
+    ${o.risks.map(x=>`<tr><td style="color:var(--orange)">${esc(x.r)}</td><td>${esc(x.m||'-')}</td></tr>`).join('')}</table>`:'')}
+  </div>`;
+}
+function momMd(){
+  const o=S.summary; if(!o) return '';
+  const L=[];
+  L.push(`# MOM — ${o.meta&&o.meta.title||$('mTitle').value||''}`,'');
+  L.push(`**ลูกค้า:** ${o.meta&&o.meta.client||'-'}  `,`**วันที่:** ${o.meta&&o.meta.date||'-'}  `,
+         `**ผู้เข้าร่วม:** ${(o.meta&&o.meta.attendees||S.speakers.map(s=>s.n)).join(', ')}`,'','---','');
+  L.push('## Executive Summary','',o.executive||'','');
+  (o.topics||[]).forEach(t=>{
+    L.push(`## ${t.topic}`,'');
+    (t.points||[]).forEach(p=>L.push(`- ${p}`));
+    if((t.says||[]).length){ L.push('','**ใครพูดอะไร**',''); t.says.forEach(s=>L.push(`- **${s.who}:** ${s.said}`)); }
+    L.push('');
+  });
+  if((o.decisions||[]).length){ L.push('## ข้อตกลง','','| ข้อตกลง | ผู้ตัดสิน |','|---|---|');
+    o.decisions.forEach(d=>L.push(`| ${d.d} | ${d.by||'-'} |`)); L.push(''); }
+  if((o.actions||[]).length){ L.push('## Action Items','','| สิ่งที่ต้องทำ | ผู้รับผิดชอบ | กำหนด | Priority |','|---|---|---|---|');
+    o.actions.forEach(a=>L.push(`| ${a.task} | ${a.owner||'-'} | ${a.due||'TBD'} | ${a.pri||'-'} |`)); L.push(''); }
+  if((o.issues||[]).length){ L.push('## Open Issues','','| ประเด็น | ผลกระทบ |','|---|---|');
+    o.issues.forEach(x=>L.push(`| ${x.i} | ${x.impact||'-'} |`)); L.push(''); }
+  if((o.risks||[]).length){ L.push('## Risks','','| Risk | Mitigation |','|---|---|');
+    o.risks.forEach(x=>L.push(`| ${x.r} | ${x.m||'-'} |`)); L.push(''); }
+  return L.join('\n');
+}
+function exportMom(){ dl(fname('md').replace('.md','_MOM.md'), momMd(), 'text/markdown;charset=utf-8'); }
+function copyMom(){ navigator.clipboard.writeText(momMd()).then(()=>toast('คัดลอก MOM แล้ว')); }
+
+/* ══════════════════ DIAGRAM ══════════════════ */
+function addStep(type){
+  S.steps.push({n:S.steps.length+1,title:'',desc:'',actor:'',type:type||'process',yes:'ใช่',no:'ไม่ใช่'});
+  renderStepEd(); renderDg();
+}
+function renderStepEd(){
+  $('stepList').innerHTML = S.steps.map((s,i)=>`
+    <div class="stepEd">
+      <input class="f" value="${esc(s.n)}" onchange="S.steps[${i}].n=this.value;renderDg()" style="text-align:center">
+      <input class="f" value="${esc(s.title)}" placeholder="ชื่อขั้นตอน" onchange="S.steps[${i}].title=this.value;renderDg()">
+      <input class="f" value="${esc(s.desc)}" placeholder="คำอธิบาย" onchange="S.steps[${i}].desc=this.value;renderDg()">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <input class="f" value="${esc(s.actor)}" placeholder="Actor" onchange="S.steps[${i}].actor=this.value;renderDg()">
+        <select class="f" onchange="S.steps[${i}].type=this.value;renderStepEd();renderDg()">
+          <option value="process" ${s.type==='process'?'selected':''}>Process</option>
+          <option value="decision" ${s.type==='decision'?'selected':''}>Decision</option>
+          <option value="exception" ${s.type==='exception'?'selected':''}>Exception</option>
+        </select>
+        ${s.type==='decision'?`<div class="row" style="gap:5px">
+          <input class="f" value="${esc(s.yes)}" placeholder="ใช่ →" onchange="S.steps[${i}].yes=this.value;renderDg()" style="flex:1">
+          <input class="f" value="${esc(s.no)}" placeholder="ไม่ →" onchange="S.steps[${i}].no=this.value;renderDg()" style="flex:1">
+        </div>`:''}
+      </div>
+      <button class="del" onclick="S.steps.splice(${i},1);renderStepEd();renderDg()">✕</button>
+    </div>`).join('') || `<div style="color:var(--gray);font-size:.86rem;padding:18px 0">ยังไม่มี Step — สรุปที่ Tab 3 ก่อน หรือกด “+ เพิ่ม Step” เพื่อสร้างเอง</div>`;
+}
+
+function connector(color){
+  const c = color==='or' ? ['var(--orange)','rgba(255,107,53,.2)','rgba(255,107,53,.4)','rgba(255,107,53,.9)']
+                         : ['var(--cyan)','rgba(0,200,212,.2)','rgba(0,200,212,.4)','rgba(0,200,212,.9)'];
+  return `<div style="display:flex;flex-direction:column;align-items:center;height:44px">
+    <div style="flex:1;width:2px;background:linear-gradient(180deg,${c[0]},${c[1]});box-shadow:0 0 8px ${c[2]}"></div>
+    <div style="color:${c[0]};font-size:.5rem;text-shadow:0 0 8px ${c[3]}">▼</div></div>`;
+}
+function nodeHTML(s){
+  const or = s.type==='exception';
+  const bd = or?'rgba(255,107,53,.32)':'rgba(0,200,212,.3)';
+  const bg = or?'var(--orange)':'var(--cyan)';
+  if(s.type==='decision'){
+    return `<div style="display:flex;flex-direction:column;align-items:center;width:100%">
+      <div style="width:172px;height:172px;background:var(--node2);border:1.5px solid var(--orange);
+        box-shadow:var(--orange-g);transform:rotate(45deg);border-radius:12px;
+        display:flex;align-items:center;justify-content:center;margin:26px 0">
+        <div style="transform:rotate(-45deg);text-align:center;padding:12px;font-size:.9rem;
+          font-weight:700;color:var(--orange);line-height:1.45;max-width:150px">${esc(s.title||'เงื่อนไข?')}</div>
+      </div>
+      ${s.desc?`<div style="font-size:.82rem;color:var(--gray);text-align:center;max-width:520px;margin-bottom:10px">${esc(s.desc)}</div>`:''}
+      <div style="display:flex;gap:16px;justify-content:center;width:100%;max-width:640px">
+        <div style="flex:1;background:var(--cyan-d);border:1px solid rgba(0,200,212,.3);border-left:3px solid var(--cyan);
+          border-radius:12px;padding:12px 16px;font-size:.84rem">
+          <b style="color:var(--cyan);font-family:'Inter';font-size:.68rem;letter-spacing:.1em">YES</b><br>${esc(s.yes||'ดำเนินการต่อ')}</div>
+        <div style="flex:1;background:var(--orange-d);border:1px solid rgba(255,107,53,.3);border-left:3px solid var(--orange);
+          border-radius:12px;padding:12px 16px;font-size:.84rem">
+          <b style="color:var(--orange);font-family:'Inter';font-size:.68rem;letter-spacing:.1em">NO</b><br>${esc(s.no||'ทางเลือกอื่น')}</div>
+      </div></div>`;
+  }
+  return `<div style="background:var(--node);border:1px solid ${bd};border-radius:12px;padding:22px 26px;
+    position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);width:100%;max-width:640px">
+    <span style="position:absolute;top:-12px;left:20px;background:${bg};color:#000;font-size:.68rem;
+      font-weight:800;padding:2px 13px;border-radius:20px;font-family:'Inter';letter-spacing:.06em">
+      ${or?'EXCEPTION':'STEP '+esc(s.n)}</span>
+    ${s.actor?`<span style="position:absolute;top:-12px;right:20px;background:var(--node2);
+      border:1px solid ${bd};color:${bg};font-size:.66rem;font-weight:700;padding:2px 11px;
+      border-radius:20px;font-family:'Inter'">${esc(s.actor)}</span>`:''}
+    <div style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:6px">${esc(s.title||'—')}</div>
+    <div style="font-size:.875rem;color:var(--gray);line-height:1.65">${esc(s.desc||'')}</div>
+  </div>`;
+}
+function diagramBody(){
+  if(!S.steps.length) return `<div style="color:var(--gray);text-align:center;padding:40px;font-size:.88rem">ยังไม่มี Step</div>`;
+  return S.steps.map((s,i)=> nodeHTML(s) + (i<S.steps.length-1 ? connector(S.steps[i+1].type==='exception'?'or':'cy') : '')).join('');
+}
+function renderDg(){
+  $('dgPrev').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;max-width:700px;margin:0 auto">${diagramBody()}</div>`;
+}
+function exportDg(){
+  if(!S.steps.length) return toast('ยังไม่มี Step');
+  const o=S.summary||{}, p=o.process||{};
+  const title=$('dgTitle').value||$('mTitle').value||'Process Flow';
+  const titleEn=$('dgTitleEn').value||'';
+  const html=`<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${esc(title)} — Process Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0D0D12;--surface:#141420;--node:#1C1F2E;--node2:#1A2235;
+--cyan:#00C8D4;--cyan-d:rgba(0,200,212,.15);--cyan-g:0 0 12px rgba(0,200,212,.5),0 0 28px rgba(0,200,212,.18);
+--orange:#FF6B35;--orange-d:rgba(255,107,53,.15);--orange-g:0 0 12px rgba(255,107,53,.5),0 0 28px rgba(255,107,53,.18);
+--white:#FFF;--gray:#A0AEC0;--border:rgba(255,255,255,.08);--r:12px;--r-lg:18px}
+body{font-family:'Sarabun','Inter',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;line-height:1.65}
+@media print{body{background:var(--bg)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<header style="padding:44px 60px 32px;border-bottom:1px solid var(--border);
+ background:linear-gradient(180deg,rgba(0,200,212,.04) 0%,transparent 100%)">
+ <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;font-family:'Inter'">
+  <span style="display:inline-block;width:24px;height:1.5px;background:var(--cyan)"></span>
+  NetSuite Process Flow${p.module?' — '+esc(p.module):''}</div>
+ <h1 style="font-size:2rem;font-weight:700;line-height:1.25;margin-bottom:8px">${esc(title)}${titleEn?` <span style="color:var(--cyan)">(${esc(titleEn)})</span>`:''}</h1>
+ <p style="font-size:.95rem;color:var(--gray)">${esc(($('mClient').value||'')+(($('mClient').value&&$('mDate').value)?' · ':'')+($('mDate').value||''))}</p>
+</header>
+<main style="padding:52px 60px 56px;display:flex;flex-direction:column;align-items:center;max-width:820px;margin:0 auto">
+${diagramBody()}
+</main>
+<footer style="padding:18px 60px;border-top:1px solid var(--border);display:flex;justify-content:space-between;
+ align-items:center;font-size:.75rem;color:rgba(160,174,192,.45)">
+ <span>Sr. NetSuite Consultant</span><span>💡 Ctrl+P → Save as PDF</span><span>${esc($('mDate').value||new Date().toISOString().slice(0,10))}</span>
+</footer></body></html>`;
+  dl(fname('html').replace('.html','_ProcessFlow.html'), html, 'text/html;charset=utf-8');
+  toast('Export Diagram แล้ว');
+}
+
+/* ══════════════════ SESSION ══════════════════ */
+function saveSession(){
+  const data={meta:{title:$('mTitle').value,client:$('mClient').value,date:$('mDate').value,lang:$('mLang').value},
+    speakers:S.speakers,segments:S.segments,summary:S.summary,steps:S.steps,
+    dgTitle:$('dgTitle').value,dgTitleEn:$('dgTitleEn').value,v:1};
+  dl(fname('json').replace('.json','_session.json'), JSON.stringify(data,null,2),'application/json');
+  toast('เซฟ session แล้ว');
+}
+function loadSession(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const d=JSON.parse(r.result);
+    $('mTitle').value=d.meta.title||''; $('mClient').value=d.meta.client||'';
+    $('mDate').value=d.meta.date||''; $('mLang').value=d.meta.lang||'th-TH';
+    S.speakers=d.speakers||S.speakers; S.segments=d.segments||[]; S.summary=d.summary||null; S.steps=d.steps||[];
+    $('dgTitle').value=d.dgTitle||''; $('dgTitleEn').value=d.dgTitleEn||'';
+    renderSpk(); renderTr(); renderLive(); if(S.summary) renderSum(); renderStepEd(); renderDg();
+    toast('โหลด session แล้ว');
+  }catch(e){ toast('ไฟล์ไม่ถูกต้อง'); } };
+  r.readAsText(f); inp.value='';
+}
+
+/* ══════════════════ SHORTCUTS ══════════════════ */
+document.addEventListener('keydown',e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable;
+  if(e.ctrlKey&&e.code==='Space'){ e.preventDefault(); S.recording?stopRec():startRec(); return; }
+  if(e.ctrlKey&&e.key==='s'){ e.preventDefault(); saveSession(); return; }
+  if(typing) return;
+  if(/^[1-9]$/.test(e.key)){ const i=+e.key-1; if(i<S.speakers.length){ setSpk(i); toast('ผู้พูด: '+S.speakers[i].n); } }
+});
+window.addEventListener('beforeunload',e=>{ if(S.recording||S.segments.length){ e.preventDefault(); e.returnValue=''; } });
+
+/* ══════════════════ INIT ══════════════════ */
+$('mDate').valueAsDate=new Date();
+renderSpk(); renderTr(); renderStepEd(); renderDg();
+if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
+  $('liveBox').innerHTML='<span style="color:var(--orange)">⚠️ เบราว์เซอร์นี้ไม่รองรับการถอดเสียงอัตโนมัติ — ใช้ Chrome หรือ Edge (ยังอัดไฟล์เสียงได้ปกติ)</span>';
+}
+</script>
+</body></html>
