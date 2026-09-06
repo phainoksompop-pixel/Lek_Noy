@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MeetingScribe — บันทึก / ถอดเสียง / สรุป / Process Diagram</title>
+<title>Meeting Workspace — บันทึกและสรุปการประชุม</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -145,29 +145,39 @@ table.t td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);verti
 .toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
 kbd{font-family:'Inter';font-size:.7rem;background:rgba(255,255,255,.09);border:1px solid var(--border);
   border-radius:5px;padding:1px 6px;color:#fff}
+
+/* ---------- professional workspace theme ---------- */
+:root{--bg:#f5f7fa;--surface:#ffffff;--node:#ffffff;--node2:#f7f9fc;--cyan:#0b66c3;--cyan-d:#e9f2ff;--cyan-g:none;--orange:#b54708;--orange-d:#fff3e8;--orange-g:none;--green:#168a57;--red:#c9372c;--white:#172b4d;--gray:#62748a;--border:#dfe5ec;--r:10px;--r-lg:14px}
+body{color:var(--white);font-size:15px;background:var(--bg)}
+header.app{padding:16px 32px 0;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);box-shadow:0 1px 2px rgba(9,30,66,.06);backdrop-filter:blur(10px)}
+.brand{margin-bottom:12px;gap:12px}.logo{width:38px;height:38px;border:0;border-radius:9px;background:#0b66c3;box-shadow:none;color:#fff;font-family:'Inter';font-weight:800;font-size:.82rem;letter-spacing:.02em}.brand h1{font-size:1.1rem;letter-spacing:0}.brand .sub{font-size:.68rem;color:#62748a;letter-spacing:.1em}.tabs{gap:14px}.tab{padding:10px 2px;font-size:.84rem;color:#62748a}.tab:hover{color:#0b66c3}.tab.on{color:#0b66c3;border-bottom-color:#0b66c3;text-shadow:none}
+main{max-width:1200px;padding:28px 32px 64px}.card{padding:22px 24px;border-color:var(--border);box-shadow:0 1px 2px rgba(9,30,66,.04);background:#fff}.card.cy{border-color:#bfd8f5;box-shadow:0 1px 2px rgba(9,30,66,.04)}.card h2{font-size:1.05rem}.card .hint{color:#62748a}.eyebrow{color:#0b66c3;font-size:.66rem;letter-spacing:.12em}.eyebrow::before{background:#0b66c3}
+button.btn{border-color:#b9cbe0;background:#fff;color:#294a72;border-radius:7px;box-shadow:none;padding:9px 15px}button.btn:hover{background:#eef5ff;border-color:#75a7df;box-shadow:none}button.btn.solid{background:#0b66c3;color:#fff;border-color:#0b66c3}button.btn.solid:hover{background:#095bab;box-shadow:none}button.btn.or{border-color:#f1c9aa;background:#fff;color:#9e3c00}button.btn.or:hover{background:#fff3e8;box-shadow:none}button.btn.gh{border-color:#d6dde7;background:#fff;color:#52657c}button.btn.gh:hover{color:#172b4d;border-color:#b8c4d1;background:#f7f9fc}
+input.f,select.f,textarea.f{background:#fff;color:#172b4d;border-color:#cbd5e1;border-radius:7px}input.f:focus,select.f:focus,textarea.f:focus{border-color:#0b66c3;box-shadow:0 0 0 3px rgba(11,102,195,.12)}label.lb{color:#52657c}.pill.cy{background:#dcecff;color:#0b4f98}.pill.or{background:#fff0e6;color:#9e3c00}.pill.gh{background:#eef1f5;color:#52657c}.note{background:#f0f6ff;border-color:#bfd8f5;border-left-color:#0b66c3;color:#294a72}.warn{background:#fff7ed;border-color:#fed7aa;border-left-color:#d97706;color:#7c2d12}
+.rec-hero{background:#fff;border-color:#bfd8f5;text-align:left;padding:28px}.timer{font-size:3.1rem;color:#172b4d}.timer.live{color:#0b66c3;text-shadow:none}.status{color:#62748a}.meter{background:#e8edf3}.meter i{background:#0b66c3;box-shadow:none}.live-box{background:#f8fafc;border-color:#cbd5e1;color:#62748a}.live-box b{color:#0b66c3}.spk{background:#fff;border-color:#dfe5ec}.spk.on{border-color:#0b66c3;background:#eef5ff;box-shadow:none}.seg:hover{background:#f8fafc;border-color:#e2e8f0}.seg .tx:focus{background:#fff;border-color:#0b66c3}.seg select{background:#fff;color:#172b4d;border-color:#cbd5e1}.stats b,.sum-sec h3,table.t th{color:#0b66c3}.tp{background:#fff;border-color:#dfe5ec;border-left-color:#0b66c3}.tp ul,.quote{color:#334155}.quote{border-left-color:#d97706}.quote .who{color:#9e3c00}table.t th{background:#f7f9fc;border-bottom-color:#dfe5ec}table.t td{border-bottom-color:#edf1f5}.toast{background:#172b4d;border-color:#172b4d;box-shadow:0 8px 24px rgba(9,30,66,.18);color:#fff}kbd{background:#eef1f5;border-color:#d6dde7;color:#334155}
 </style>
 </head>
 <body>
 
 <header class="app">
   <div class="brand">
-    <div class="logo">🎙️</div>
+    <div class="logo">MS</div>
     <div style="flex:1">
-      <div class="sub">Meeting Capture · Transcribe · Summarize · Diagram</div>
-      <h1>MeetingScribe <span style="color:var(--cyan)">for NetSuite Consultants</span></h1>
+      <div class="sub">Meeting documentation workspace</div>
+      <h1>Meeting Workspace</h1>
     </div>
     <div class="row">
-      <button class="btn gh" onclick="saveSession()">💾 Save .json</button>
-      <button class="btn gh" onclick="document.getElementById('loadF').click()">📂 Load</button>
+      <button class="btn gh" onclick="saveSession()">บันทึก Session</button>
+      <button class="btn gh" onclick="document.getElementById('loadF').click()">เปิด Session</button>
       <input type="file" id="loadF" accept=".json" style="display:none" onchange="loadSession(this)">
     </div>
   </div>
   <div class="tabs">
-    <button class="tab on" data-t="rec">1 · บันทึกเสียง</button>
-    <button class="tab" data-t="tr">2 · Transcript</button>
-    <button class="tab" data-t="sum">3 · สรุปประชุม</button>
-    <button class="tab" data-t="dg">4 · Process Diagram</button>
-    <button class="tab" data-t="hp">คู่มือ / Setup</button>
+    <button class="tab on" data-t="rec">บันทึกเสียง</button>
+    <button class="tab" data-t="tr">Transcript</button>
+    <button class="tab" data-t="sum">สรุปการประชุม</button>
+    <button class="tab" data-t="dg">Process Flow</button>
+    <button class="tab" data-t="hp">คู่มือการใช้งาน</button>
   </div>
 </header>
 
@@ -271,13 +281,13 @@ kbd{font-family:'Inter';font-size:.7rem;background:rgba(255,255,255,.09);border:
 <!-- ══════════ TAB 3 : SUMMARY ══════════ -->
 <section class="panel" id="p-sum">
   <div class="card cy">
-    <div class="eyebrow">AI Summarization</div>
-    <h2>สรุปประชุม + ใครพูดอะไร</h2>
-    <div class="hint">สร้าง MOM ครบชุด: หัวข้อหลัก · ประเด็นรายคน · ข้อตกลง · Action Items · Open Issues · Risk + โครง Process สำหรับทำ Diagram</div>
+    <div class="eyebrow">Meeting Summary</div>
+    <h2>จัดทำสรุปการประชุม</h2>
+    <div class="hint">สร้าง MOM พร้อมหัวข้อสำคัญ ข้อตกลง งานที่ต้องดำเนินการ ประเด็นค้าง และโครง Process Flow</div>
     <div class="row">
-      <button class="btn solid" id="btnAI" onclick="runAI()">✨ สรุปด้วย AI (ในตัว)</button>
-      <button class="btn" onclick="copyPrompt()">📋 คัดลอก Prompt → วางใน Claude</button>
-      <button class="btn gh" onclick="document.getElementById('jsonBox').style.display='block'">📥 วางผลลัพธ์ JSON กลับเข้ามา</button>
+      <button class="btn solid" id="btnAI" onclick="runAI()">ประมวลผลสรุป</button>
+      <button class="btn" onclick="copyPrompt()">คัดลอกข้อความเพื่อประมวลผล</button>
+      <button class="btn gh" onclick="document.getElementById('jsonBox').style.display='block'">นำเข้าผลลัพธ์</button>
       <span id="aiStat" style="font-size:.82rem;color:var(--gray)"></span>
     </div>
     <div class="warn" id="apiWarn" style="display:none">⚠️ <span>เรียก AI ในตัวไม่ได้ (ปกติเกิดเมื่อเปิดไฟล์นี้จากเครื่องตัวเอง) — ใช้ปุ่ม <b>คัดลอก Prompt</b> ไปวางใน Claude แล้วเอา JSON ที่ได้กลับมาวางในช่อง <b>วางผลลัพธ์ JSON</b> ผลลัพธ์เหมือนกันทุกอย่าง</span></div>
